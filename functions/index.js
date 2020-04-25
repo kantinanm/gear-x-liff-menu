@@ -43,7 +43,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const params = agent.parameters;
     const studentID = params.stdID;
     const studentCard = params.stdCard;
-    agent.add(`รหัสนิสิตของคุณคือ! ${studentID} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${studentCard} ใช่หรือไม่? `);
+
+    agent.add(`รหัสนิสิตของคุณคือ! ${studentID} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${studentCard} ใช่หรือไม่คะ? `);
 
     const payloadJson = {
         "type": "template",
@@ -62,7 +63,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
               "text": "ไม่ใช่"
             }
           ],
-          "text": "ยืนยันการลงทะเบียนนะคะ"
+          "text": "ยืนยันการลงทะเบียน"
         }
       }
     let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
