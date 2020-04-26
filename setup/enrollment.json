@@ -1,0 +1,28 @@
+[{
+    "acadyear": "2562",
+    "semester": "1",
+    "user_id": "",
+    "student_id": "59365827",
+    "subjects": [{
+            "subject_code": "305492",
+            "subject_name": "โครงงานด้านวิศวกรรมคอมพิวเตอร์ 2",
+            "type": "SU",
+            "unit": "3",
+            "section": "1"
+        },
+        {
+            "subject_code": "305456",
+            "subject_name": "คอมพิวเตอร์วิทัศน์",
+            "type": "A-F(E)",
+            "unit": "3",
+            "section": "1"
+        },
+        {
+            "subject_code": "305434",
+            "subject_name": "การประมวลผลภาพดิจิทัล",
+            "type": "A-F(E)",
+            "unit": "3",
+            "section": "1"
+        }
+    ]
+}]
