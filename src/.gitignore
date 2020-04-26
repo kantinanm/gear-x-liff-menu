@@ -1,0 +1,4 @@
+firebase-config.js
+
+*.log
+package-lock.json
