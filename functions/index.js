@@ -391,125 +391,129 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const result = "2562254074519";
     return db.collection('classSchedule').doc(result).get().then(snapshot => {
         //agent.add('test '+snapshot.data().Monday.room);
+        let carousel;
+        let menu;
         const dayList = snapshot.data()
         for (const key in dayList) {
           if (dayList.hasOwnProperty(key)) {
-            let menu;
             const schedules = dayList[key];
             //agent.add('test!! '+schedules);
-            if (agent.requestSource !== agent.LINE) {
-              menu = `ผิดพลาด!!`;
-            }
-            else {
-              const carousel = getSchedule(schedules);
-              menu = carousel
-              menu = new Payload(agent.LINE, carousel, { sendAsMessage: true });
-            }
-            return agent.add(menu);
+            carousel = getSchedule(schedules);
           }
         }
+        let payloadJson = {
+          "type": "flex",
+          "altText": "ตารางเรียน",
+          "contents": {
+            "type": "carousel",
+            "contents": carousel
+          }
+        }
+        
+        menu = new Payload(agent.LINE, payloadJson, { sendAsMessage: true });
+        agent.add(menu);
     });
   }
 
   function getSchedule (schedules) {
-      //agent.add('room '+schedule.room);
-      return {
-        "type": "flex",
-        "altText": "Flex Message",
-        "contents": {
-          "type": "carousel",
+      const rows = [];
+      const classBubble = {
+        "type": "bubble",
+        "direction": "ltr",
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
           "contents": [
             {
-              "type": "bubble",
-              "direction": "ltr",
-              "body": {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "sm",
-                "contents": [
-                  {
-                    "type": "image",
-                    "url": schedules.url,
-                    "gravity": "top",
-                    "size": "full"
-                  },
-                  {
-                    "type": "box",
-                    "layout": "baseline",
-                    "contents": [
-                      {
-                        "type": "icon",
-                        "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/next1.png",
-                        "size": "xl"
-                      },
-                      {
-                        "type": "text",
-                        "text": "13:00-14:50 น.",
-                        "size": "xl",
-                        "align": "center",
-                        "weight": "bold"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "box",
-                    "layout": "baseline",
-                    "contents": [
-                      {
-                        "type": "text",
-                        "text": schedules.subject_code,
-                        "size": "sm",
-                        "wrap": true
-                      }
-                    ]
-                  },
-                  {
-                    "type": "box",
-                    "layout": "baseline",
-                    "contents": [
-                      {
-                        "type": "text",
-                        "text": schedules.subject_name,
-                        "size": "sm"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "box",
-                    "layout": "baseline",
-                    "contents": [
-                      {
-                        "type": "text",
-                        "text": schedules.room,
-                        "size": "sm"
-                      }
-                    ]
-                  }
-                ]
-              },
-              "footer": {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "sm",
-                "contents": [
-                  {
-                    "type": "text",
-                    "text": schedules.dates,
-                    "size": "xl",
-                    "align": "center",
-                    "weight": "bold"
-                  }
-                ]
-              },
-              "styles": {
-                "body": {
-                  "backgroundColor": schedules.color
+              "type": "image",
+              "url": schedules.url,
+              "gravity": "top",
+              "size": "full"
+            },
+            {
+              "type": "box",
+              "layout": "baseline",
+              "contents": [
+                {
+                  "type": "icon",
+                  "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/next1.png",
+                  "size": "xl"
+                },
+                {
+                  "type": "text",
+                  "text": "13:00-14:50 น.",
+                  "size": "xl",
+                  "align": "center",
+                  "weight": "bold"
                 }
-              }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "baseline",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": schedules.subject_code,
+                  "size": "sm",
+                  "wrap": true
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "baseline",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": schedules.subject_name,
+                  "size": "sm"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "baseline",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": schedules.room,
+                  "size": "sm"
+                }
+              ]
             }
           ]
+        },
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": schedules.dates,
+              "size": "xl",
+              "align": "center",
+              "weight": "bold"
+            }
+          ]
+        },
+        "styles": {
+          "body": {
+            "backgroundColor": schedules.color
+          }
         }
       }
+      return rows.push(classBubble);
+      /*return {
+        "type": "flex",
+        "altText": "ตารางเรียน",
+        "contents": {
+          "type": "carousel",
+          "contents": rows
+        }
+      }*/
   }
   //end menu 3
 
