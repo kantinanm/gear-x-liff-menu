@@ -18,7 +18,6 @@ const db = admin.firestore();
 // });
 
 
-
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
 
@@ -67,18 +66,15 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         }
       }
     let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
-
     agent.add(payload);
-
   }
 
   function isClickYes(agent){
     const params = agent.parameters;
     const studentID = params.stdID.toString();
-    const studentCard = params.stdCard.toString(); 
-    const keyid = "tQuDIQyY8u1uY2OzLcZw";
+    //const studentCard = params.stdCard.toString(); 
 
-    return db.collection('studentInfo').doc(keyid).get().then(doc => {
+    return db.collection('studentInfo').doc(studentID).get().then(doc => {
         const flexMessage = {
           "type": "flex",
           "altText": "Flex Message",
@@ -122,9 +118,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 {
                   "type": "button",
                   "action": {
-                    "type": "uri",
+                    "type": "message",
                     "label": "ผูกบัญชี",
-                    "uri": "https://linecorp.com"
+                    "text":"ผูกบัญชี"
                   },
                   "style": "secondary"
                 }
@@ -137,11 +133,489 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     });
   }
 
+  //menu 2
+  function showSubject (agent) {
+    return db.collection('subject').limit(4).get().then(snapshot => {
+      if (snapshot.empty) return agent.add(`ยังไม่มีรายวิชาที่ลงทะเบียน`);
+      let menu;
+      if (agent.requestSource !== agent.LINE) {
+        menu = `รายวิชาที่ลงทะเบียน :\n${snapshot.docs.map(subject => `- ${subject.data().subName}`).sort().join('\n')}`;
+      }
+      else {
+        const carousel = getListSubject(snapshot.docs)
+        menu = carousel
+        menu = new Payload(agent.LINE, carousel, { sendAsMessage: true });
+      }
+      return agent.add(menu);
+    });
+  }
+
+  function selectSubject(agent){
+    const result = "62130513254074519";
+
+    return db.collection('subject').doc(result).get().then(doc => {
+      const flexMessage = {
+        "type": "flex",
+        "altText": "Flex Message",
+        "contents": {
+          "type": "bubble",
+          "direction": "ltr",
+          "hero": {
+            "type": "image",
+            "url": doc.data().url,
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover",
+            "backgroundColor": "#C5C1C1"
+          },
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "รายละเอียด",
+                "size": "xl",
+                "align": "center",
+                "weight": "bold"
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'รหัสวิชา: '+ doc.data().subId,
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'ชื่อรายวิชา: '+doc.data().subName
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'ผู้สอน: '+doc.data().teacher_name,
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'วัน-เวลา: '+doc.data().dates+' '+doc.data().times+' น.',
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'ห้อง: '+ doc.data().room
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'หน่วยกิต: '+doc.data().subUnit
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "contents": [
+                  {
+                    "type": "icon",
+                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
+                    "aspectRatio": "2:1"
+                  },
+                  {
+                    "type": "text",
+                    "text": 'กลุ่ม: '+doc.data().group_id
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      };
+      let payload = new Payload(`LINE`, flexMessage, { sendAsMessage: true });
+      agent.add(payload);
+  });
+  }
+
+  function getListSubject (subjects) {
+    const rows = subjects.map(item => {
+      const subject = item.data()
+      return {
+        "type": "bubble",
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "contents": [
+            {
+              "type": "image",
+              "url": subject.url,
+              "size": "full",
+              "backgroundColor": "#FFFFFF"
+            },
+            {
+              "type": "text",
+              "text": subject.subId+' '+subject.subName,
+              "size": "sm",
+              "weight": "bold",
+              "wrap": true
+            },
+            {
+              "type": "text",
+              "text": "ผู้สอน: " + subject.teacher_name,
+              "size": "sm",
+              "weight": "regular",
+              "wrap": true
+            },
+            {
+              "type": "text",
+              "text": "หน่วยกิต: " + subject.subUnit,
+              "size": "sm",
+              "weight": "regular",
+              "wrap": true
+            }
+          ]
+        },
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "spacing": "sm",
+          "contents": [
+            {
+              "type": "button",
+              "action": {
+                "type": "message",
+                "label": "ดูข้อมูลรายวิชา",
+                "text": 'รายวิชา ' + subject.subId+' '+subject.subName
+              },
+              "style": "primary"
+            }
+          ]
+        }
+      }
+    })
+    const seeMoreBubble = {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "uri",
+              "label": "ดูเมนูทั้งหมด",
+              "uri": "https://google.com" 
+            },
+            "color": "#C40019",
+            "gravity": "center",
+            "offsetTop": "150px"
+          }
+        ]
+      }
+    }
+    rows.push(seeMoreBubble)
+    console.log('rows: ' + JSON.stringify(rows))
+    return {
+      "type": "flex",
+      "altText": "รายวิชาที่ลงทะเบียน",
+      "contents": {
+        "type": "carousel",
+        "contents": rows
+      }
+    }
+  }
+  //end menu 2
+
+  //menu 3
+  function showSchedule (agent) {
+    const result = "2562254074519";
+    return db.collection('classSchedule').doc(result).get().then(snapshot => {
+        //agent.add('test '+snapshot.data().Monday.room);
+        const dayList = snapshot.data()
+        for (const key in dayList) {
+          if (dayList.hasOwnProperty(key)) {
+            let menu;
+            const schedules = dayList[key];
+            //agent.add('test!! '+schedules);
+            if (agent.requestSource !== agent.LINE) {
+              menu = `ผิดพลาด!!`;
+            }
+            else {
+              const carousel = getSchedule(schedules);
+              menu = carousel
+              menu = new Payload(agent.LINE, carousel, { sendAsMessage: true });
+            }
+            return agent.add(menu);
+          }
+        }
+    });
+  }
+
+  function getSchedule (schedules) {
+      //agent.add('room '+schedule.room);
+      return {
+        "type": "flex",
+        "altText": "Flex Message",
+        "contents": {
+          "type": "carousel",
+          "contents": [
+            {
+              "type": "bubble",
+              "direction": "ltr",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "image",
+                    "url": schedules.url,
+                    "gravity": "top",
+                    "size": "full"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "icon",
+                        "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/next1.png",
+                        "size": "xl"
+                      },
+                      {
+                        "type": "text",
+                        "text": "13:00-14:50 น.",
+                        "size": "xl",
+                        "align": "center",
+                        "weight": "bold"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": schedules.subject_code,
+                        "size": "sm",
+                        "wrap": true
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": schedules.subject_name,
+                        "size": "sm"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": schedules.room,
+                        "size": "sm"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": schedules.dates,
+                    "size": "xl",
+                    "align": "center",
+                    "weight": "bold"
+                  }
+                ]
+              },
+              "styles": {
+                "body": {
+                  "backgroundColor": schedules.color
+                }
+              }
+            }
+          ]
+        }
+      }
+  }
+  //end menu 3
+
+  //menu 4
+  function viewCalendar(agent){
+    const payloadJson = {
+        "type": "flex",
+        "altText": "Flex Message",
+        "contents": {
+          "type": "bubble",
+          "hero": {
+            "type": "image",
+            "url": "https://civil.eng.nu.ac.th/ceCentre/img/ungit/CCI04202020_0003.png",
+            "size": "full",
+            "aspectRatio": "3:4",
+            "aspectMode": "cover",
+            "backgroundColor": "#B49898"
+          },
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "md",
+            "contents": [
+              {
+                "type": "text",
+                "text": "ปฏิทินการศึกษา",
+                "size": "xl",
+                "weight": "bold"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "icon",
+                        "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_regular_32.png"
+                      },
+                      {
+                        "type": "text",
+                        "text": "ปีการศึกษา 2562",
+                        "margin": "sm",
+                        "weight": "bold"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "contents": [
+                      {
+                        "type": "icon",
+                        "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
+                      },
+                      {
+                        "type": "text",
+                        "text": "เทอม 2",
+                        "margin": "sm",
+                        "weight": "bold"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "spacer",
+                "size": "xxl"
+              },
+              {
+                "type": "button",
+                "action": {
+                  "type": "uri",
+                  "label": "ดูรายละเอียด",
+                  "uri": "https://liff.line.me/1654142758-0Wa6zVJm"
+                },
+                "color": "#905C44",
+                "style": "primary"
+              }
+            ]
+          }
+        }
+      }
+  let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
+  agent.add(payload);
+  //agent.add('เทส');
+  }
+
   // Run the proper function handler based on the matched Dialogflow intent name
   let intentMap = new Map();
   intentMap.set('Default Welcome Intent', welcome);
   intentMap.set('Default Fallback Intent', fallback);
   intentMap.set('studentinfo - stdID - stdCard', register);
   intentMap.set('studentinfo - stdID - stdCard - yes', isClickYes);
+  intentMap.set('showSubject', showSubject);
+  intentMap.set('selectSubject', selectSubject);
+  intentMap.set('classSchedule', showSchedule);
+  intentMap.set('calendar', viewCalendar)
   return agent.handleRequest(intentMap);
 });
