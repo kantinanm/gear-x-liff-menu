@@ -72,7 +72,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   function isClickYes(agent){
     const params = agent.parameters;
     const studentID = params.stdID.toString();
-    //const studentCard = params.stdCard.toString(); 
 
     return db.collection('studentInfo').doc(studentID).get().then(doc => {
         const flexMessage = {
@@ -151,7 +150,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   function selectSubject(agent){
-    const result = "62130513254074519";
+    const result = "621"+agent.parameters.subID+"54074519";
 
     return db.collection('subject').doc(result).get().then(doc => {
       const flexMessage = {
@@ -391,33 +390,33 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const result = "2562254074519";
     return db.collection('classSchedule').doc(result).get().then(snapshot => {
         //agent.add('test '+snapshot.data().Monday.room);
-        let carousel;
-        let menu;
+        let rows = [];
         const dayList = snapshot.data()
         for (const key in dayList) {
           if (dayList.hasOwnProperty(key)) {
             const schedules = dayList[key];
             //agent.add('test!! '+schedules);
-            carousel = getSchedule(schedules);
+            const carousel = getSchedule(schedules);
+            rows.push(carousel);
           }
         }
+        //agent.add('get bubble '+carousel);
         let payloadJson = {
           "type": "flex",
           "altText": "ตารางเรียน",
           "contents": {
             "type": "carousel",
-            "contents": carousel
+            "contents": rows
           }
         }
-        
-        menu = new Payload(agent.LINE, payloadJson, { sendAsMessage: true });
+
+        let menu = new Payload(agent.LINE, payloadJson, { sendAsMessage: true });
         agent.add(menu);
     });
   }
 
   function getSchedule (schedules) {
-      const rows = [];
-      const classBubble = {
+      return {
         "type": "bubble",
         "direction": "ltr",
         "body": {
@@ -505,15 +504,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           }
         }
       }
-      return rows.push(classBubble);
-      /*return {
-        "type": "flex",
-        "altText": "ตารางเรียน",
-        "contents": {
-          "type": "carousel",
-          "contents": rows
-        }
-      }*/
   }
   //end menu 3
 
