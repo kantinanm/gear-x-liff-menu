@@ -11,9 +11,11 @@ const db = firebase.firestore()
 // firebase collections
 const studentCollection = db.collection('students')
 const sjEnrollmentCollection = db.collection('subject_enrollment')
+const classScheduleCollection = db.collection('classSchedule')
 
 export {
     db,
     studentCollection,
-    sjEnrollmentCollection
+    sjEnrollmentCollection,
+    classScheduleCollection
 }

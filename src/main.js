@@ -1,8 +1,17 @@
 import Vue from 'vue'
 import App from './App.vue'
+import router from './router'
+import Buefy from 'buefy'
+import './globals.scss'
+
+// access to LIFF property
+Vue.prototype.$liff = window.liff
 
 Vue.config.productionTip = false
 
+Vue.use(Buefy)
+
 new Vue({
-  render: h => h(App),
+  router,
+  render: h => h(App)
 }).$mount('#app')
