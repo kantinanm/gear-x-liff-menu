@@ -1,4 +1,5 @@
-[{
+[
+  {
     "acadyear": "2562",
     "semester": "1",
     "user_id": "",
@@ -25,4 +26,33 @@
             "section": "1"
         }
     ]
-}]
+  },
+  {
+    "acadyear": "2562",
+    "semester": "1",
+    "user_id": "",
+    "student_id": "59365544",
+    "subjects": [{
+            "subject_code": "393428",
+            "subject_name": "การป้องกันระบบไฟฟ้ากำลัง",
+            "type": "SU",
+            "unit": "3",
+            "section": "1"
+        },
+        {
+            "subject_code": "303492",
+            "subject_name": "เรื่องเฉพาะทางวิศวกรรมไฟฟ้ากำลัง 2",
+            "type": "A-F(E)",
+            "unit": "3",
+            "section": "1"
+        },
+        {
+            "subject_code": "776261",
+            "subject_name": "คติชนอาเซียน",
+            "type": "A-F(E)",
+            "unit": "3",
+            "section": "1"
+        }
+    ]
+  }
+]
