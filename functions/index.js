@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require("request-promise");
+const reqId = require("request-promise");
 const functions = require('firebase-functions');
 const {WebhookClient,Payload} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
@@ -17,7 +17,6 @@ const db = admin.firestore();
 //   credential: admin.credential.cert(serviceAccount),
 //   databaseURL: 'https://pizzanulok-vfwchf.firebaseio.com'
 // });
-
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
@@ -38,34 +37,34 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     agent.add(`I'm sorry, can you try again?`);
   }
 
+  function getProfile(studentID,studentCard){
+    return reqId(`https://eecon43.nu.ac.th/checkstudent/${studentID}/`)
+    .then((data) => {
+      let responseData = JSON.parse(data);
+      let result = responseData.result;
+      if(result == "OK"){
+        if(responseData.pid == studentCard.toString()){
+          console.log('Success');
+          return Promise.resolve(responseData);
+        }
+      /*}else{
+        console.log('Not defined');
+        return Promise.resolve('Not defined');*/
+      }
+    }).catch((err)=> {
+      return Promise.reject(err);
+    });
+  }
+
   function register(agent) {
     const params = agent.parameters;
     const studentID = params.stdID;
     const studentCard = params.stdCard;
 
-    request({
-      method: "GET",
-      uri: `https://eecon43.nu.ac.th/checkstudent/${studentID}/`
-    }).then(function (data) {
-      studentObj = JSON.parse(data);
-      if (studentObj.result == "OK") {
-        // นำข้อมูลมา รอตรวจสอบ pid
-        //console.log("PID is " + studentObj.pid);
-        agent.add('PID is ' + studentObj.pid);
-      } else {
-        // ไม่พบข้อมูล
-        // agent.add("แจ้งผู้ใช้ รหัสนิสิตของคุณ อาจจะไม่ถูกต้อง กรุณาพิมพ์ใหม่  ");
-        // หรือจะ ขึ้นให้ผู้ใช้เลือกว่า จะยังที่จะลงทะเบียนต่อ หรือไม่  ถ้า ใช่ ก็ให้ผู้ใช้พิมพ์ รหัสนิสิต อีกครั้ง หรือถ้าไม่ ก็ จบ intent นี้ไปเลย
-        agent.add('ไม่พบข้อมูล');
-      }
-
-      }).catch(function (err) {
-          console.log('Error:', err.message);
-      });
-
-    /*agent.add(`รหัสนิสิตของคุณคือ! ${studentID} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${studentCard} ใช่หรือไม่คะ? `);
-
-    const payloadJson = {
+    return getProfile(studentID,studentCard)
+    .then((result)=> {
+      agent.add(`รหัสนิสิตของคุณคือ! ${result.student_code} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${result.pid} ใช่หรือไม่คะ?`);
+      const payloadJson = {
         "type": "template",
         "altText": "this is a confirm template",
         "template": {
@@ -85,71 +84,86 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           "text": "ยืนยันการลงทะเบียน"
         }
       }
-    let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
-    agent.add(payload);*/
+      let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
+      agent.add(payload);
+      return Promise.resolve()
+    })
+    .catch((err) => {
+      console.log(err);
+      agent.add("Uh oh, something happened.");
+      return Promise.resolve();
+    })
   }
 
   function isClickYes(agent){
     const params = agent.parameters;
-    const studentID = params.stdID.toString();
+    const studentID = params.stdID;
+    const studentCard = params.stdCard;
 
-    return db.collection('studentInfo').doc(studentID).get().then(doc => {
-        const flexMessage = {
-          "type": "flex",
-          "altText": "Flex Message",
-          "contents": {
-            "type": "bubble",
-            "direction": "ltr",
-            "header": {
-              "type": "box",
-              "layout": "vertical",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "ข้อมูลผู้ใช้",
-                  "align": "center",
-                  "color": "#123663"
-                }
-              ]
-            },
-            "hero": {
-              "type": "image",
-              "url": "https://civil.eng.nu.ac.th/ceCentre/img/ungit/CCI04202020_0003.png",
-              "size": "full",
-              "aspectMode": "cover",
-              "backgroundColor": "#FB5F15"
-            },
-            "body": {
-              "type": "box",
-              "layout": "vertical",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": studentID + ' ' + doc.data().student_name,
-                  "align": "center"
-                }
-              ]
-            },
-            "footer": {
-              "type": "box",
-              "layout": "horizontal",
-              "contents": [
-                {
-                  "type": "button",
-                  "action": {
-                    "type": "message",
-                    "label": "ผูกบัญชี",
-                    "text":"ผูกบัญชี"
-                  },
-                  "style": "secondary"
-                }
-              ]
-            }
+    return getProfile(studentID,studentCard)
+    .then((result)=> {
+      const flexMessage = {
+        "type": "flex",
+        "altText": "Flex Message",
+        "contents": {
+          "type": "bubble",
+          "direction": "ltr",
+          "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "ข้อมูลผู้ใช้",
+                "align": "center",
+                "color": "#123663"
+              }
+            ]
+          },
+          "hero": {
+            "type": "image",
+            "url": "https://civil.eng.nu.ac.th/ceCentre/img/ungit/CCI04202020_0003.png",
+            "size": "full",
+            "aspectMode": "cover",
+            "backgroundColor": "#FB5F15"
+          },
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": result.student_code + ' ' + result.fullname,
+                "align": "center"
+              }
+            ]
+          },
+          "footer": {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "ผูกบัญชี",
+                  "text":"ผูกบัญชี"
+                },
+                "style": "secondary"
+              }
+            ]
           }
-        };
-        let payload = new Payload(`LINE`, flexMessage, { sendAsMessage: true });
-        agent.add(payload);
-    });
+        }
+      };
+      let payload = new Payload(`LINE`, flexMessage, { sendAsMessage: true });
+      agent.add(payload);
+      return Promise.resolve()
+    })
+    .catch((err) => {
+      console.log(err);
+      agent.add("Uh oh, something happened.");
+      return Promise.resolve();
+    })
   }
 
   //menu 2
