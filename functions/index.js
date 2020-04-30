@@ -1,5 +1,6 @@
 'use strict';
 
+const request = require("request-promise");
 const functions = require('firebase-functions');
 const {WebhookClient,Payload} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
@@ -19,7 +20,6 @@ const db = admin.firestore();
 
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
-
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
   const agent = new WebhookClient({
@@ -43,7 +43,27 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const studentID = params.stdID;
     const studentCard = params.stdCard;
 
-    agent.add(`รหัสนิสิตของคุณคือ! ${studentID} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${studentCard} ใช่หรือไม่คะ? `);
+    request({
+      method: "GET",
+      uri: `https://eecon43.nu.ac.th/checkstudent/${studentID}/`
+    }).then(function (data) {
+      studentObj = JSON.parse(data);
+      if (studentObj.result == "OK") {
+        // นำข้อมูลมา รอตรวจสอบ pid
+        //console.log("PID is " + studentObj.pid);
+        agent.add('PID is ' + studentObj.pid);
+      } else {
+        // ไม่พบข้อมูล
+        // agent.add("แจ้งผู้ใช้ รหัสนิสิตของคุณ อาจจะไม่ถูกต้อง กรุณาพิมพ์ใหม่  ");
+        // หรือจะ ขึ้นให้ผู้ใช้เลือกว่า จะยังที่จะลงทะเบียนต่อ หรือไม่  ถ้า ใช่ ก็ให้ผู้ใช้พิมพ์ รหัสนิสิต อีกครั้ง หรือถ้าไม่ ก็ จบ intent นี้ไปเลย
+        agent.add('ไม่พบข้อมูล');
+      }
+
+      }).catch(function (err) {
+          console.log('Error:', err.message);
+      });
+
+    /*agent.add(`รหัสนิสิตของคุณคือ! ${studentID} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${studentCard} ใช่หรือไม่คะ? `);
 
     const payloadJson = {
         "type": "template",
@@ -66,7 +86,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         }
       }
     let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
-    agent.add(payload);
+    agent.add(payload);*/
   }
 
   function isClickYes(agent){
