@@ -43,13 +43,20 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       let responseData = JSON.parse(data);
       let result = responseData.result;
       if(result == "OK"){
+        //พบข้อมูลรหัสนิสิต
         if(responseData.pid == studentCard.toString()){
+          //หมายเลขบัตร ปชช ถูกต้อง
           console.log('Success');
           return Promise.resolve(responseData);
+        }else{
+          //หมายเลขบัตร ปชช ไม่ถูกต้อง
+          console.log('Undefined!');
+          return Promise.resolve('Undefined');
         }
-      /*}else{
-        console.log('Not defined');
-        return Promise.resolve('Not defined');*/
+      }else{
+        //ไม่พบข้อมูล
+        console.log('Undefined');
+        return Promise.resolve('Undefined');
       }
     }).catch((err)=> {
       return Promise.reject(err);
@@ -63,34 +70,44 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     return getProfile(studentID,studentCard)
     .then((result)=> {
-      agent.add(`รหัสนิสิตของคุณคือ! ${result.student_code} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${result.pid} ใช่หรือไม่คะ?`);
-      const payloadJson = {
-        "type": "template",
-        "altText": "this is a confirm template",
-        "template": {
-          "type": "confirm",
-          "actions": [
-            {
-              "type": "message",
-              "label": "Yes",
-              "text": "ใช่"
-            },
-            {
-              "type": "message",
-              "label": "No",
-              "text": "ไม่ใช่"
-            }
-          ],
-          "text": "ยืนยันการลงทะเบียน"
+      if(result == "Undefined"){
+        const undefined = {
+          "type": "text",
+          "text": "ไม่พบข้อมูล!"
         }
+        let msg = new Payload(`LINE`, undefined, { sendAsMessage: true });
+        agent.add(msg);
+        return Promise.reject()
+      }else{
+        agent.add(`รหัสนิสิตของคุณคือ! ${result.student_code} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${result.pid} ใช่หรือไม่คะ?`);
+        const payloadJson = {
+          "type": "template",
+          "altText": "this is a confirm template",
+          "template": {
+            "type": "confirm",
+            "actions": [
+              {
+                "type": "message",
+                "label": "Yes",
+                "text": "ใช่"
+              },
+              {
+                "type": "message",
+                "label": "No",
+                "text": "ไม่ใช่"
+              }
+            ],
+            "text": "ยืนยันการลงทะเบียน"
+          }
+        }
+        let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
+        agent.add(payload);
+        return Promise.resolve()
       }
-      let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
-      agent.add(payload);
-      return Promise.resolve()
     })
     .catch((err) => {
       console.log(err);
-      agent.add("Uh oh, something happened.");
+      agent.add("กรุณาลองใหม่อีกครั้งค่ะ");
       return Promise.resolve();
     })
   }
