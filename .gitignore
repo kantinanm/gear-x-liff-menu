@@ -3,6 +3,7 @@ node_modules
 /dist
 src/firebase-config.js
 .firebaserc
+setup/student.json
 
 # local env files
 .env.local
