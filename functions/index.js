@@ -20,7 +20,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     response
   });
   //console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
-  //console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+  console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
 
   const getBody = request.body.originalDetectIntentRequest.payload;
   const userId = getBody.data.source.userId;
@@ -65,10 +65,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const studentID = params.stdID;
     const studentCard = params.stdCard;
 
-    //const getBody = request.body.originalDetectIntentRequest.payload;
-    //const userId = getBody.data.source.userId;
-    console.log('user id: '+ userId);
-
+    //console.log('user id: '+ userId);
     return getProfile(studentID,studentCard)
     .then((result)=> {
       if(result == "Undefined"){
@@ -184,38 +181,109 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     })
   }
 
+  function addStudent(agent){
+    const params = agent.parameters;
+    const studentID = params.stdID;
+    const studentCard = params.stdCard;
+    return getProfile(studentID,studentCard)
+    .then((result)=> {
+      if(result == "Undefined"){
+        const undefined = {
+          "type": "text",
+          "text": "ไม่พบข้อมูล!"
+        }
+        let msg = new Payload(`LINE`, undefined, { sendAsMessage: true });
+        agent.add(msg);
+        return Promise.reject()
+      }else{
+        try{
+          db.collection("students").add({
+            "student_code": result.student_code,
+            "student_id_reg": result.student_id_reg,
+            "pid": result.pid,
+            "fullname": result.fullname,
+            "fullname_eng": result.fullname_eng,
+            "faculty": result.faculty,
+            "curriculum": result.curriculum,
+            "major": result.major,
+            "degree": result.degree,
+            "certificate_name":result.certificate_name,
+            "education_status": result.education_status,
+            "teacher": result.teacher,
+            "gpa": result.gpa,
+            "user_id":userId
+          })
+          .then(function(docRef) {
+              console.log("Document written with ID: ", docRef.id);
+          })
+          .catch(function(error) {
+              console.error("Error adding document: ", error);
+          });
+        }catch(err){
+          console.log(err);
+        }
+        console.log('user id: '+ userId + ' '+ result.student_code);
+        agent.add(`ลงทะเบียนเรียบร้อยแล้วค่ะ`);
+        const payloadJson = {
+          "type": "sticker",
+          "packageId": "11537",
+          "stickerId": "52002735"
+        }
+        let payload = new Payload(`LINE`, payloadJson, { sendAsMessage: true });
+        agent.add(payload);
+        return Promise.resolve()
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      agent.add("กรุณาลองใหม่อีกครั้งค่ะ");
+      return Promise.resolve();
+    })
+  }
+
   //menu 2
-  function getSubject(studentID){
+  /*function getSubject(studentID){
+    console.log(`url: https://eecon43.nu.ac.th/enroll/${studentID}/2562/2/`);
     return reqId(`https://eecon43.nu.ac.th/enroll/${studentID}/2562/2/`)
     .then((data) => {
       let responseData = JSON.parse(data);
       let result = responseData.result;
       if(result == "OK"){
-        //พบข้อมูลรหัสนิสิต
         console.log('Success');
+        console.log('subid: '+responseData.enroll[0].subject_id);
         return Promise.resolve(responseData.enroll);
-      }else{
-        //ไม่พบข้อมูล
-        console.log('Undefined');
-        return Promise.resolve('Undefined');
       }
+      
     }).catch((err)=> {
       return Promise.reject(err);
     });
-  }
+  }*/
 
   function showSubject (agent) {
-    return db.collection('students').get().then(snapshot => {
-      if (snapshot.empty) return agent.add(`ยังไม่มีข้อมูลนิสิต`);
-      snapshot.docs.map(item => {
-        const uid = item.data().user_id;
+    //return db.collection('students').get().then(snapshot => {
+    //return db.collection('students').doc('o96eEPEc5hUay57DWGHJ').get().then(item => {
+      //if (snapshot.empty) return agent.add(`ยังไม่มีข้อมูลนิสิต`);
+      //snapshot.docs.map(item => {
+        /*const uid = item.data().user_id;
         if(uid == userId){
-          console.log('student_id: '+ item.data().student_id);
-          return getSubject(item.data().student_id)
+          const std_id = item.data().student_id;
+          console.log('student_id!: '+ std_id);
+          return getSubject('59365544')
+          .then((result)=> {
+            for (let index = 0; index < result.length; index++) {
+              const enroll = result[index];
+              console.log(enroll.subject_id);
+            }
+            return Promise.resolve()
+          })
+          .catch((err) => {
+            console.log(err);
+            return Promise.resolve();
+          })
         }
-      });
-    });
-    /*return db.collection('subject').limit(4).get().then(snapshot => {
+      });*/
+    //});
+    return db.collection('subject').limit(4).get().then(snapshot => {
       if (snapshot.empty) return agent.add(`ยังไม่มีรายวิชาที่ลงทะเบียน`);
       let menu;
       if (agent.requestSource !== agent.LINE) {
@@ -227,10 +295,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         menu = new Payload(agent.LINE, carousel, { sendAsMessage: true });
       }
       return agent.add(menu);
-    });*/
+    });
   }
 
-  /*function selectSubject(agent){
+  function selectSubject(agent){
     const result = "621"+agent.parameters.subID+"54074519";
 
     return db.collection('subject').doc(result).get().then(doc => {
@@ -463,7 +531,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         "contents": rows
       }
     }
-  }*/
+  }
   //end menu 2
 
   //menu 3
@@ -688,6 +756,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   intentMap.set('Default Fallback Intent', fallback);
   intentMap.set('studentinfo - stdID - stdCard', register);
   intentMap.set('studentinfo - stdID - stdCard - yes', isClickYes);
+  intentMap.set('studentinfo - register', addStudent);
   intentMap.set('showSubject', showSubject);
   intentMap.set('selectSubject', selectSubject);
   intentMap.set('classSchedule', showSchedule);
