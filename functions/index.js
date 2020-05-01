@@ -12,12 +12,6 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
-// const serviceAccount = require('./key.json')
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-//   databaseURL: 'https://pizzanulok-vfwchf.firebaseio.com'
-// });
-
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -28,6 +22,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
   console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
 
+  
   function welcome(agent) {
     agent.add(`Welcome to my agent!`);
   }
@@ -67,6 +62,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const params = agent.parameters;
     const studentID = params.stdID;
     const studentCard = params.stdCard;
+
+    const getBody = request.body.originalDetectIntentRequest.payload;
+    const userId = getBody.data.source.userId;
+    console.log('user id: '+ userId);
 
     return getProfile(studentID,studentCard)
     .then((result)=> {
