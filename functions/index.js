@@ -35,18 +35,18 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   function chkUser(user){
-    db.collection('students').where('user_id', '==', user).get()
+    return db.collection('students').where('user_id', '==', user).get()
     .then(snapshot => {
       if (snapshot.empty) {
         console.log('No matching documents.');
-        return false;
+        return Promise.resolve(false);
       }else{
         console.log('true');
-        return true
+        return Promise.resolve(true);
       }  
-    })
-    .catch(err => {
+    }).catch(err => {
       console.log('Error getting documents', err);
+      return Promise.reject(err);
     });
   }
 
@@ -76,14 +76,18 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     });
   }
 
-  function register(agent) {
+  async function register(agent) {
   const params = agent.parameters;
   const studentID = params.stdID;
   const studentCard = params.stdCard;
 
   console.log('user id: '+ userId);
+  //[1]เช็ค userid จาก db ถ้ามีข้อมูลแล้วจะไม่ให้ผูกบัญชีได้อีก
+  if(await chkUser(userId)) return agent.add('ท่านได้ผูกบัญชีกับระบบแล้วค่ะ')
+  //[2]ถ้ายังไม่ได้ผูกบัญชี ส่งรหัสนิสิตกับหมายเลขบัตร ปชช ไปดึงข้อมูลจาก reg
     return getProfileFromURL(studentID,studentCard)
     .then((result)=> {
+      //[3]ไม่พบข้อมูลใน reg
       if(result == "Undefined"){
         const undefined = {
           "type": "text",
@@ -93,6 +97,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         agent.add(msg);
         return Promise.reject()
       }else{
+        //[4]พบข้อมูลใน reg
         agent.add(`รหัสนิสิตของคุณคือ! ${result.student_code} และหมายเลขบัตรประจำตัวประชาชนของคุณคือ ${result.pid} ใช่หรือไม่คะ?`);
         const payloadJson = {
           "type": "template",
