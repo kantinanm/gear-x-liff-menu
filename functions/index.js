@@ -34,7 +34,23 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     agent.add(`I'm sorry, can you try again?`);
   }
 
-  function getProfile(studentID,studentCard){
+  function chkUser(user){
+    db.collection('students').where('user_id', '==', user).get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        console.log('No matching documents.');
+        return false;
+      }else{
+        console.log('true');
+        return true
+      }  
+    })
+    .catch(err => {
+      console.log('Error getting documents', err);
+    });
+  }
+
+  function getProfileFromURL(studentID,studentCard){
     return reqId(`https://eecon43.nu.ac.th/checkstudent/${studentID}/`)
     .then((data) => {
       let responseData = JSON.parse(data);
@@ -61,12 +77,12 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   function register(agent) {
-    const params = agent.parameters;
-    const studentID = params.stdID;
-    const studentCard = params.stdCard;
+  const params = agent.parameters;
+  const studentID = params.stdID;
+  const studentCard = params.stdCard;
 
-    //console.log('user id: '+ userId);
-    return getProfile(studentID,studentCard)
+  console.log('user id: '+ userId);
+    return getProfileFromURL(studentID,studentCard)
     .then((result)=> {
       if(result == "Undefined"){
         const undefined = {
@@ -115,7 +131,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const studentID = params.stdID;
     const studentCard = params.stdCard;
 
-    return getProfile(studentID,studentCard)
+    return getProfileFromURL(studentID,studentCard)
     .then((result)=> {
       const flexMessage = {
         "type": "flex",
@@ -185,7 +201,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const params = agent.parameters;
     const studentID = params.stdID;
     const studentCard = params.stdCard;
-    return getProfile(studentID,studentCard)
+    return getProfileFromURL(studentID,studentCard)
     .then((result)=> {
       if(result == "Undefined"){
         const undefined = {
@@ -242,47 +258,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   //menu 2
-  /*function getSubject(studentID){
-    console.log(`url: https://eecon43.nu.ac.th/enroll/${studentID}/2562/2/`);
-    return reqId(`https://eecon43.nu.ac.th/enroll/${studentID}/2562/2/`)
-    .then((data) => {
-      let responseData = JSON.parse(data);
-      let result = responseData.result;
-      if(result == "OK"){
-        console.log('Success');
-        console.log('subid: '+responseData.enroll[0].subject_id);
-        return Promise.resolve(responseData.enroll);
-      }
-      
-    }).catch((err)=> {
-      return Promise.reject(err);
-    });
-  }*/
 
   function showSubject (agent) {
-    //return db.collection('students').get().then(snapshot => {
-    //return db.collection('students').doc('o96eEPEc5hUay57DWGHJ').get().then(item => {
-      //if (snapshot.empty) return agent.add(`ยังไม่มีข้อมูลนิสิต`);
-      //snapshot.docs.map(item => {
-        /*const uid = item.data().user_id;
-        if(uid == userId){
-          const std_id = item.data().student_id;
-          console.log('student_id!: '+ std_id);
-          return getSubject('59365544')
-          .then((result)=> {
-            for (let index = 0; index < result.length; index++) {
-              const enroll = result[index];
-              console.log(enroll.subject_id);
-            }
-            return Promise.resolve()
-          })
-          .catch((err) => {
-            console.log(err);
-            return Promise.resolve();
-          })
-        }
-      });*/
-    //});
     return db.collection('subject').limit(4).get().then(snapshot => {
       if (snapshot.empty) return agent.add(`ยังไม่มีรายวิชาที่ลงทะเบียน`);
       let menu;
