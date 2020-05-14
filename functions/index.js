@@ -264,171 +264,85 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
   //menu 2
 
-  function showSubject (agent) {
-    return db.collection('subject').limit(4).get().then(snapshot => {
-      if (snapshot.empty) return agent.add(`ยังไม่มีรายวิชาที่ลงทะเบียน`);
-      let menu;
-      if (agent.requestSource !== agent.LINE) {
-        menu = `รายวิชาที่ลงทะเบียน :\n${snapshot.docs.map(subject => `- ${subject.data().subName}`).sort().join('\n')}`;
+  function getSubject(studentID){
+    console.log(`url: https://eecon43.nu.ac.th/enroll/${studentID}/2555/2/`);
+    return reqId(`https://eecon43.nu.ac.th/enroll/${studentID}/2555/2/`)
+    .then((data) => {
+      let responseData = JSON.parse(data);
+      let result = responseData.result;
+      if(result == "OK"){
+        console.log('Success');
+        console.log('subid: '+responseData.enroll[0].subject_id);
+        return Promise.resolve(responseData.enroll);
       }
-      else {
-        const carousel = getListSubject(snapshot.docs)
-        menu = carousel
-        menu = new Payload(agent.LINE, carousel, { sendAsMessage: true });
-      }
-      return agent.add(menu);
+    }).catch((err)=> {
+      console.log('err!! '+err)
+      return Promise.reject(err);
     });
   }
 
-  function selectSubject(agent){
-    const result = "621"+agent.parameters.subID+"54074519";
-
-    return db.collection('subject').doc(result).get().then(doc => {
-      const flexMessage = {
-        "type": "flex",
-        "altText": "Flex Message",
-        "contents": {
-          "type": "bubble",
-          "direction": "ltr",
-          "hero": {
-            "type": "image",
-            "url": doc.data().url,
-            "size": "full",
-            "aspectRatio": "20:13",
-            "aspectMode": "cover",
-            "backgroundColor": "#C5C1C1"
-          },
-          "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": [
-              {
-                "type": "text",
-                "text": "รายละเอียด",
-                "size": "xl",
-                "align": "center",
-                "weight": "bold"
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'รหัสวิชา: '+ doc.data().subId,
-                    "wrap": true
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'ชื่อรายวิชา: '+doc.data().subName
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'ผู้สอน: '+doc.data().teacher_name,
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'วัน-เวลา: '+doc.data().dates+' '+doc.data().times+' น.',
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'ห้อง: '+ doc.data().room
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'หน่วยกิต: '+doc.data().subUnit
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "baseline",
-                "contents": [
-                  {
-                    "type": "icon",
-                    "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/fast-forward.png",
-                    "aspectRatio": "2:1"
-                  },
-                  {
-                    "type": "text",
-                    "text": 'กลุ่ม: '+doc.data().group_id
-                  }
-                ]
+  function showSubject (agent) {
+    return db.collection('students').where('user_id', '==', userId).get()
+      .then(snapshot => {
+        console.log('true '+ userId);
+        if (snapshot.empty) {
+          console.log('No matching documents.');
+          return;
+        }  
+        
+        snapshot.forEach(doc => {
+          console.log(doc.id, '=>', doc.data());
+          let rows = [];
+          const std_id = doc.data().student_code;
+          //console.log(std_id);
+          return getSubject(std_id)
+          .then((result)=> {
+            result.forEach(enroll => {
+              //console.log('enroll '+ enroll.subject_name);
+              const carousel = getListSubject(enroll);
+              rows.push(carousel);
+            });
+            //console.log('json ',JSON.stringify(rows));
+            /*for (let index = 0; index < result.length; index++) {
+              const enroll = result[index];
+              console.log(enroll.subject_id);
+              const carousel = getListSubject(enroll);
+              rows.push(carousel);
+            }*/
+            //console.log(result[0].subject_id);
+            let payloadJson = {
+              "type": "template",
+              "altText": "รายวิชาที่ลงทะเบียน",
+              "contents": {
+                "type": "carousel",
+                "contents": rows
               }
-            ]
-          }
-        }
-      };
-      let payload = new Payload(`LINE`, flexMessage, { sendAsMessage: true });
-      agent.add(payload);
-  });
+            }
+            //console.log('payloadJson ',JSON.stringify(payloadJson));
+            let menu = new Payload(agent.LINE, payloadJson, { sendAsMessage: true });
+            agent.add(menu);
+            console.log('commits');
+            return Promise.resolve()
+          })
+          .catch((err) => {
+            console.log(err);
+            return Promise.resolve();
+          })
+        });
+          agent.add("กรุณารอสักครู่...");
+      })
+      .catch(err => {
+        console.log('Error getting documents', err);
+      });
   }
 
+/* ----------- */
   function getListSubject (subjects) {
-    const rows = subjects.map(item => {
-      const subject = item.data()
-      return {
+    console.log('enroll'+ subjects.subject_name);
+    return {
+      "type": "flex",
+      "altText": "Flex Message",
+      "contents": {
         "type": "bubble",
         "body": {
           "type": "box",
@@ -437,30 +351,38 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           "contents": [
             {
               "type": "image",
-              "url": subject.url,
+              "url": "https://raw.githubusercontent.com/matzeeya/Liff-gear-x/master/src/pic/CCI04202020_0002-1.png",
               "size": "full",
               "backgroundColor": "#FFFFFF"
             },
             {
               "type": "text",
-              "text": subject.subId+' '+subject.subName,
+              "text": subjects.subject_id+' '+subjects.subject_name,
               "size": "sm",
               "weight": "bold",
               "wrap": true
             },
             {
-              "type": "text",
-              "text": "ผู้สอน: " + subject.teacher_name,
-              "size": "sm",
-              "weight": "regular",
-              "wrap": true
+              "type": "box",
+              "layout": "vertical",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": 'หน่วยกิต: '+subjects.unit,
+                  "size": "sm"
+                }
+              ]
             },
             {
-              "type": "text",
-              "text": "หน่วยกิต: " + subject.subUnit,
-              "size": "sm",
-              "weight": "regular",
-              "wrap": true
+              "type": "box",
+              "layout": "vertical",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": 'กลุ่ม: '+subjects.section,
+                  "size": "sm"
+                }
+              ]
             }
           ]
         },
@@ -472,45 +394,14 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             {
               "type": "button",
               "action": {
-                "type": "message",
+                "type": "uri",
                 "label": "ดูข้อมูลรายวิชา",
-                "text": 'รายวิชา ' + subject.subId+' '+subject.subName
+                "uri": "https://linecorp.com"
               },
               "style": "primary"
             }
           ]
         }
-      }
-    })
-    const seeMoreBubble = {
-      "type": "bubble",
-      "body": {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "sm",
-        "contents": [
-          {
-            "type": "button",
-            "action": {
-              "type": "uri",
-              "label": "ดูเมนูทั้งหมด",
-              "uri": "https://google.com" 
-            },
-            "color": "#C40019",
-            "gravity": "center",
-            "offsetTop": "150px"
-          }
-        ]
-      }
-    }
-    rows.push(seeMoreBubble)
-    console.log('rows: ' + JSON.stringify(rows))
-    return {
-      "type": "flex",
-      "altText": "รายวิชาที่ลงทะเบียน",
-      "contents": {
-        "type": "carousel",
-        "contents": rows
       }
     }
   }
@@ -740,7 +631,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   intentMap.set('studentinfo - stdID - stdCard - yes', isClickYes);
   intentMap.set('studentinfo - register', addStudent);
   intentMap.set('showSubject', showSubject);
-  intentMap.set('selectSubject', selectSubject);
+  //intentMap.set('selectSubject', selectSubject);
   intentMap.set('classSchedule', showSchedule);
   intentMap.set('calendar', viewCalendar)
   return agent.handleRequest(intentMap);
