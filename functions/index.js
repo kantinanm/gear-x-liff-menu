@@ -263,16 +263,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   //menu 2
-
   function getSubject(studentID){
-    console.log(`url: https://eecon43.nu.ac.th/enroll/${studentID}/2555/2/`);
-    return reqId(`https://eecon43.nu.ac.th/enroll/${studentID}/2555/2/`)
+    return reqId(`https://eecon43.nu.ac.th/enroll/${studentID}/2562/2/`)
     .then((data) => {
       let responseData = JSON.parse(data);
       let result = responseData.result;
       if(result == "OK"){
         console.log('Success');
-        console.log('subid: '+responseData.enroll[0].subject_id);
         return Promise.resolve(responseData.enroll);
       }
     }).catch((err)=> {
@@ -282,6 +279,67 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   }
 
   function showSubject (agent) {
+    return db.collection('students').where('user_id', '==', userId).get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          console.log('No matching documents.');
+          return;
+        }  
+        snapshot.forEach(doc => {
+          const std_id = doc.data().student_code;
+          return getSubject(std_id)
+          .then((result)=> {
+            //const addData = addSubjectToDB(std_id,result);
+            console.log('json ',JSON.stringify(result));
+            /*result.forEach(enroll => {
+              const addData = addSubjectToDB(std_id,enroll);
+            });*/
+            //console.log('json ',JSON.stringify(addData));
+            return Promise.resolve()
+          })
+          .catch((err) => {
+            console.log(err);
+            return Promise.resolve();
+          })
+        });
+      })
+      .catch(err => {
+        console.log('Error getting documents', err);
+      });
+  }
+
+  function addSubjectToDB(std_id,enroll){
+    try{
+      db.collection("enrollment").add({
+        "student_code": std_id,
+        "enroll": [
+          {
+            "subject_id": enroll.subject_id,
+            "subject_name": enroll.subject_name, 
+            "unit": enroll.unit,
+            "section": enroll.section
+          }, 
+          { 
+            "subject_id": enroll.subject_id,
+            "subject_name": enroll.subject_name, 
+            "unit": enroll.unit,
+            "section": enroll.section
+          }
+        ],
+        "user_id":userId
+      })
+      .then(function(docRef) {
+          console.log("Document written with ID: ", docRef.id);
+      })
+      .catch(function(error) {
+          console.error("Error adding document: ", error);
+      });
+    }catch(err){
+      console.log(err);
+    }
+  }
+
+  /*function showSubject (agent) {
     return db.collection('students').where('user_id', '==', userId).get()
       .then(snapshot => {
         console.log('true '+ userId);
@@ -303,13 +361,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
               rows.push(carousel);
             });
             //console.log('json ',JSON.stringify(rows));
-            /*for (let index = 0; index < result.length; index++) {
-              const enroll = result[index];
-              console.log(enroll.subject_id);
-              const carousel = getListSubject(enroll);
-              rows.push(carousel);
-            }*/
-            //console.log(result[0].subject_id);
             let payloadJson = {
               "type": "template",
               "altText": "รายวิชาที่ลงทะเบียน",
@@ -334,10 +385,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       .catch(err => {
         console.log('Error getting documents', err);
       });
-  }
+  }*/
 
 /* ----------- */
-  function getListSubject (subjects) {
+  /*function getListSubject (subjects) {
     console.log('enroll'+ subjects.subject_name);
     return {
       "type": "flex",
@@ -404,7 +455,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         }
       }
     }
-  }
+  }*/
   //end menu 2
 
   //menu 3
