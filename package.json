@@ -12,7 +12,7 @@
     "buefy": "^0.8.15",
     "core-js": "^3.6.4",
     "firebase": "^7.14.2",
-    "node-sass": "^4.14.0",
+    "node-sass": "^7.0.0",
     "sass-loader": "^8.0.2",
     "vconsole": "^3.3.4",
     "vue": "^2.6.11",
